@@ -1,0 +1,13 @@
+version: "3"
+services:
+  db:
+    image: postgres
+    ports:
+      - 5433:5432
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres # 배포 시 반드시 변경
+      - POSTGRES_PASSWORD=postgres # 배포 시 반드시 변경
+      - POSTGRES_INITDB_ARG=--encoding=UTF-8
+    # volumes:
+    #   - ./pgdata:/var/lib/postgresql/data

@@ -1,0 +1,45 @@
+version: "3"
+
+services:
+  backend:
+    build: "./backend"
+    command: # 배포 시 반드시 변경
+      - bash
+      - -c
+      - |
+        python manage.py makemigrations
+        python manage.py migrate
+        echo "from django.contrib.auth import get_user_model;
+        User = get_user_model(); 
+        user = User.objects.filter(is_superuser=True);
+        if not user: User.objects.create_superuser('template', 'admin@myproject.com', 'template');" | python manage.py shell
+        python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/code
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=postgres
+      - DB_USER=postgres # 배포 시 반드시 변경
+      - DB_PASS=postgres # 배포 시 반드시 변경
+      - DB_PORT=5432
+    depends_on:
+      db:
+        condition: service_healthy # db의 healthcheck 참고하여 에러 여부확인
+    restart: on-failure # 실패 시 재시도 (db 연결 속도 문제)
+  db:
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres # 배포 시 반드시 변경
+      - POSTGRES_PASSWORD=postgres # 배포 시 반드시 변경
+    healthcheck: # 상태 확인, 에러시 5초 후 다시 확인, 5번 실패 시 종료
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+volumes:
+  postgres_data:
